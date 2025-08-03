@@ -3,11 +3,13 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "✅ Hello, this Flask app is running on Render for FREE!"
+    return "Hello, this Flask app is running on Render for FREE!"
 
 @app.route('/todos', methods=['GET', 'POST'])
 def todo_list():
     global todos
+
+    task = None
 
     if request.method == 'POST':
         task = request.json.get('task')

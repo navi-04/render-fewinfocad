@@ -5,24 +5,41 @@ app = Flask(__name__)
 def home():
     return "Hello, this Flask app is running on Render for FREE!"
 
-@app.route('/todos', methods=['GET', 'POST'])
-def todo_list():
-    global todos
+USERS = {
+    "naveen": "mySecret123",
+    "john": "pass456"
+}
 
-    task = None
+@app.route("/check-login", methods=["POST"])
+def check_login():
+    data = request.get_json()
+    username = data.get("username", "")
+    password = data.get("password", "")
 
-    if request.method == 'POST':
-        task = request.json.get('task')
-    elif request.method == 'GET' and 'task' in request.args:
-        task = request.args.get('task')
+    # Validate
+    if username in USERS and USERS[username] == password:
+        return jsonify({"result": True})
     else:
-        task = None
+        return jsonify({"result": False})
 
-    if task:
-        todos.append(task)
-        return jsonify({"message": "Task added", "todos": todos})
+# @app.route('/todos', methods=['GET', 'POST'])
+# def todo_list():
+#     global todos
 
-    return jsonify(todos)
+#     task = None
+
+#     if request.method == 'POST':
+#         task = request.json.get('task')
+#     elif request.method == 'GET' and 'task' in request.args:
+#         task = request.args.get('task')
+#     else:
+#         task = None
+
+#     if task:
+#         todos.append(task)
+#         return jsonify({"message": "Task added", "todos": todos})
+
+#     return jsonify(todos)
 
 
 if __name__ == '__main__':

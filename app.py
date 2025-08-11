@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 @app.route('/')
 def home():
-    return "Hello, this Flask app is running on Render for FREE!"
+    return "Hello, this Flask app is running on Render"
 
 USERS = {
     "naveen": "mySecret123",

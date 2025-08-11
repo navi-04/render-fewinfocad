@@ -8,7 +8,7 @@ def home():
     return "Hello, this Flask app is running on Render"
 
 USERS = {
-    "naveen": "mySecret123",
+    "admin@fewinfocad.com": "admin1",
     "john": "pass456"
 }
 

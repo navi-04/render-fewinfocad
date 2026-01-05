@@ -1,10 +1,428 @@
-from flask import Flask, request, jsonify
+"""
+Clubs API Backend - FastAPI Implementation
+"""
+
+from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
+import motor.motor_asyncio
+from bson import ObjectId
+import os
+
+app = FastAPI(title="Clubs API", version="1.0.0")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# MongoDB connection
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
+db = client.fewinfocad
+clubs_collection = db.clubs
+user_clubs_collection = db.user_clubs
+
+
+# Pydantic models
+class GalleryItem(BaseModel):
+    id: int
+    title: str
+    image: str
+
+
+class Event(BaseModel):
+    id: int
+    title: str
+    date: str
+    time: str
+    location: str
+    description: str
+
+
+class Club(BaseModel):
+    id: int
+    name: str
+    shortDescription: str
+    description: str
+    meetingSchedule: str
+    location: str
+    memberCount: int
+    category: str
+    image: str
+    tags: List[str]
+    contact: str
+    gallery: Optional[List[GalleryItem]] = []
+    upcomingEvents: Optional[List[Event]] = []
+
+
+class JoinLeaveRequest(BaseModel):
+    userId: str
+    clubId: int
+
+
+# Helper functions
+def club_helper(club) -> dict:
+    """Convert MongoDB document to dict"""
+    return {
+        "id": club["id"],
+        "name": club["name"],
+        "shortDescription": club["shortDescription"],
+        "description": club["description"],
+        "meetingSchedule": club["meetingSchedule"],
+        "location": club["location"],
+        "memberCount": club["memberCount"],
+        "category": club["category"],
+        "image": club["image"],
+        "tags": club["tags"],
+        "contact": club["contact"],
+        "gallery": club.get("gallery", []),
+        "upcomingEvents": club.get("upcomingEvents", [])
+    }
+
+
+async def is_member(user_id: str, club_id: int) -> bool:
+    """Check if user is a member of a club"""
+    member = await user_clubs_collection.find_one({
+        "userId": user_id,
+        "clubId": club_id
+    })
+    return member is not None
+
+
+async def get_user_club_ids(user_id: str) -> List[int]:
+    """Get list of club IDs user is a member of"""
+    cursor = user_clubs_collection.find({"userId": user_id})
+    memberships = await cursor.to_list(length=None)
+    return [m["clubId"] for m in memberships]
+
+
+# API Endpoints
+@app.get("/")
+async def home():
+    """Root endpoint"""
+    return {"message": "Clubs API is running", "version": "1.0.0"}
+
+
+@app.get("/clubs/{user_id}")
+async def get_clubs_data(user_id: str):
+    """Fetch all clubs data for a user"""
+    try:
+        clubs_cursor = clubs_collection.find({})
+        all_clubs = await clubs_cursor.to_list(length=None)
+        
+        if not all_clubs:
+            return {
+                "result": True,
+                "myClubs": [],
+                "otherClubs": [],
+                "message": "No clubs found"
+            }
+        
+        user_club_ids = await get_user_club_ids(user_id)
+        
+        my_clubs = []
+        other_clubs = []
+        
+        for club in all_clubs:
+            club_dict = club_helper(club)
+            if club["id"] in user_club_ids:
+                my_clubs.append(club_dict)
+            else:
+                other_clubs.append(club_dict)
+        
+        return {
+            "result": True,
+            "myClubs": my_clubs,
+            "otherClubs": other_clubs,
+            "message": "Clubs data retrieved successfully"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching clubs data: {str(e)}"
+        )
+
+
+@app.get("/clubs/my/{user_id}")
+async def get_my_clubs(user_id: str):
+    """Fetch clubs that the user is a member of"""
+    try:
+        user_club_ids = await get_user_club_ids(user_id)
+        
+        if not user_club_ids:
+            return {
+                "result": True,
+                "clubs": [],
+                "message": "User is not a member of any clubs"
+            }
+        
+        clubs_cursor = clubs_collection.find({"id": {"$in": user_club_ids}})
+        clubs = await clubs_cursor.to_list(length=None)
+        
+        return {
+            "result": True,
+            "clubs": [club_helper(club) for club in clubs],
+            "message": "User clubs retrieved successfully"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching user clubs: {str(e)}"
+        )
+
+
+@app.get("/clubs/all")
+async def get_all_clubs():
+    """Fetch all available clubs"""
+    try:
+        clubs_cursor = clubs_collection.find({})
+        clubs = await clubs_cursor.to_list(length=None)
+        
+        return {
+            "result": True,
+            "clubs": [club_helper(club) for club in clubs],
+            "message": "All clubs retrieved successfully"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching all clubs: {str(e)}"
+        )
+
+
+@app.get("/clubs/details/{club_id}")
+async def get_club_details(club_id: int, user_id: Optional[str] = None):
+    """Fetch details of a specific club with optional membership status"""
+    try:
+        club = await clubs_collection.find_one({"id": club_id})
+        
+        if not club:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Club with ID {club_id} not found"
+            )
+        
+        club_data = club_helper(club)
+        
+        # Add membership status if user_id is provided
+        if user_id:
+            club_data["isMember"] = await is_member(user_id, club_id)
+        
+        return {
+            "result": True,
+            "club": club_data,
+            "message": "Club details retrieved successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching club details: {str(e)}"
+        )
+
+
+@app.post("/clubs/join")
+async def join_club(request: JoinLeaveRequest):
+    """Join a club"""
+    try:
+        club = await clubs_collection.find_one({"id": request.clubId})
+        if not club:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Club with ID {request.clubId} not found"
+            )
+        
+        if await is_member(request.userId, request.clubId):
+            return {
+                "result": False,
+                "message": "User is already a member of this club"
+            }
+        
+        membership = {
+            "userId": request.userId,
+            "clubId": request.clubId,
+            "joinedAt": datetime.utcnow()
+        }
+        await user_clubs_collection.insert_one(membership)
+        
+        await clubs_collection.update_one(
+            {"id": request.clubId},
+            {"$inc": {"memberCount": 1}}
+        )
+        
+        return {
+            "result": True,
+            "message": f"Successfully joined {club['name']}",
+            "clubId": request.clubId
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error joining club: {str(e)}"
+        )
+
+
+@app.post("/clubs/leave")
+async def leave_club(request: JoinLeaveRequest):
+    """Leave a club"""
+    try:
+        club = await clubs_collection.find_one({"id": request.clubId})
+        if not club:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Club with ID {request.clubId} not found"
+            )
+        
+        if not await is_member(request.userId, request.clubId):
+            return {
+                "result": False,
+                "message": "User is not a member of this club"
+            }
+        
+        result = await user_clubs_collection.delete_one({
+            "userId": request.userId,
+            "clubId": request.clubId
+        })
+        
+        if result.deleted_count == 0:
+            return {
+                "result": False,
+                "message": "Failed to leave club"
+            }
+        
+        await clubs_collection.update_one(
+            {"id": request.clubId},
+            {"$inc": {"memberCount": -1}}
+        )
+        
+        return {
+            "result": True,
+            "message": f"Successfully left {club['name']}",
+            "clubId": request.clubId
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error leaving club: {str(e)}"
+        )
+
+
+@app.get("/clubs/search")
+async def search_clubs(q: str):
+    """Search clubs by name, category, or tags"""
+    try:
+        if not q or len(q.strip()) == 0:
+            return {
+                "result": True,
+                "clubs": [],
+                "message": "Please provide a search term"
+            }
+        
+        search_pattern = {"$regex": q, "$options": "i"}
+        query = {
+            "$or": [
+                {"name": search_pattern},
+                {"shortDescription": search_pattern},
+                {"description": search_pattern},
+                {"category": search_pattern},
+                {"tags": search_pattern}
+            ]
+        }
+        
+        clubs_cursor = clubs_collection.find(query)
+        clubs = await clubs_cursor.to_list(length=None)
+        
+        return {
+            "result": True,
+            "clubs": [club_helper(club) for club in clubs],
+            "message": f"Found {len(clubs)} clubs matching '{q}'"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error searching clubs: {str(e)}"
+        )
+
+
+@app.get("/clubs/events/{club_id}")
+async def get_club_events(club_id: int):
+    """Fetch upcoming events for a club"""
+    try:
+        club = await clubs_collection.find_one({"id": club_id})
+        
+        if not club:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Club with ID {club_id} not found"
+            )
+        
+        return {
+            "result": True,
+            "events": club.get("upcomingEvents", []),
+            "message": "Club events retrieved successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching club events: {str(e)}"
+        )
+
+
+@app.get("/clubs/gallery/{club_id}")
+async def get_club_gallery(club_id: int):
+    """Fetch gallery images for a club"""
+    try:
+        club = await clubs_collection.find_one({"id": club_id})
+        
+        if not club:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Club with ID {club_id} not found"
+            )
+        
+        return {
+            "result": True,
+            "gallery": club.get("gallery", []),
+            "message": "Club gallery retrieved successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching club gallery: {str(e)}"
+        )
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "timestamp": datetime.utcnow()}
+
+
+# Keep Flask routes below for backward compatibility
+from flask import Flask as FlaskApp, request, jsonify
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
-@app.route('/')
-def home():
+flask_app = FlaskApp(__name__)
+CORS(flask_app)
+
+@flask_app.route('/')
+def flask_home():
     return "Hello, this Flask app is running on Render"
 
 USERS = {

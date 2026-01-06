@@ -577,7 +577,7 @@ def generate_comprehensive_attendance_data():
 # ==================== ATTENDANCE ROUTES ====================
 
 @app.route('/api/attendance', methods=['GET'])
-def get_attendance():
+def get_all_attendance_records():
     """Get all attendance records - exactly matching old frontend structure"""
     try:
         attendance_records = generate_comprehensive_attendance_data()

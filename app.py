@@ -1064,5 +1064,323 @@ def search_clubs():
         }), 500
 
 
+# ==================== LIVE STREAMS DATA ====================
+
+LIVE_STREAMS_DATA = {
+    "currentStreams": [
+        {
+            "id": 1,
+            "title": "Annual College Cultural Fest - Day 1",
+            "description": "Live coverage of the opening ceremony and performances from the Annual Cultural Festival.",
+            "thumbnail": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "viewerCount": 1250,
+            "startTime": "10:00 AM",
+            "date": "Today",
+            "streamUrl": "#",
+            "hostedBy": "Cultural Committee",
+            "location": "Main Auditorium"
+        },
+        {
+            "id": 2,
+            "title": "Guest Lecture: Future of AI in Education",
+            "description": "Distinguished Professor Dr. Emily Chen discusses how artificial intelligence is transforming education systems worldwide.",
+            "thumbnail": "https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "viewerCount": 875,
+            "startTime": "2:30 PM",
+            "date": "Today",
+            "streamUrl": "#",
+            "hostedBy": "Computer Science Department",
+            "location": "CS Lecture Hall"
+        },
+        {
+            "id": 3,
+            "title": "Inter-College Basketball Finals",
+            "description": "Live stream of the championship match between our college team and State University.",
+            "thumbnail": "https://images.unsplash.com/photo-1519861531473-9200262188bf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "viewerCount": 2340,
+            "startTime": "4:00 PM",
+            "date": "Today",
+            "streamUrl": "#",
+            "hostedBy": "Sports Department",
+            "location": "College Stadium"
+        }
+    ],
+    "upcomingStreams": [
+        {
+            "id": 4,
+            "title": "Placement Training Workshop",
+            "description": "Career guidance experts share tips on resume building, interview skills, and placement preparation.",
+            "thumbnail": "https://images.unsplash.com/photo-1552581234-26160f608093?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Tomorrow",
+            "scheduledTime": "11:00 AM",
+            "hostedBy": "Placement Cell",
+            "location": "Seminar Hall B",
+            "remindMeEnabled": False
+        },
+        {
+            "id": 5,
+            "title": "Annual College Cultural Fest - Day 2",
+            "description": "Day 2 of the cultural fest featuring music performances, dance competitions, and more.",
+            "thumbnail": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Tomorrow",
+            "scheduledTime": "10:00 AM",
+            "hostedBy": "Cultural Committee",
+            "location": "Main Auditorium",
+            "remindMeEnabled": False
+        },
+        {
+            "id": 6,
+            "title": "Research Symposium: Renewable Energy",
+            "description": "Students and faculty present their research findings on renewable energy solutions.",
+            "thumbnail": "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Jan 15, 2026",
+            "scheduledTime": "1:00 PM",
+            "hostedBy": "Engineering Department",
+            "location": "Engineering Block",
+            "remindMeEnabled": False
+        },
+        {
+            "id": 7,
+            "title": "Alumni Connect: Entrepreneurship Journey",
+            "description": "Successful alumni share their entrepreneurial journeys and insights with current students.",
+            "thumbnail": "https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Jan 18, 2026",
+            "scheduledTime": "3:00 PM",
+            "hostedBy": "Alumni Association",
+            "location": "Business School",
+            "remindMeEnabled": False
+        },
+        {
+            "id": 8,
+            "title": "Tech Talk: Cloud Computing Trends",
+            "description": "Industry experts discuss the latest trends and innovations in cloud computing technology.",
+            "thumbnail": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Jan 20, 2026",
+            "scheduledTime": "2:00 PM",
+            "hostedBy": "IT Department",
+            "location": "Tech Auditorium",
+            "remindMeEnabled": False
+        },
+        {
+            "id": 9,
+            "title": "Annual Debate Championship",
+            "description": "Inter-departmental debate competition on current affairs and social issues.",
+            "thumbnail": "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60",
+            "scheduledDate": "Jan 22, 2026",
+            "scheduledTime": "4:30 PM",
+            "hostedBy": "Debate Club",
+            "location": "Liberal Arts Building",
+            "remindMeEnabled": False
+        }
+    ]
+}
+
+# ==================== LIVE STREAMS ROUTES ====================
+
+@app.route('/api/streams/all', methods=['GET'])
+def get_all_streams():
+    """Get all streams (both live and upcoming)"""
+    try:
+        return jsonify({
+            "result": True,
+            "message": "All streams fetched successfully",
+            "data": {
+                "currentStreams": LIVE_STREAMS_DATA["currentStreams"],
+                "upcomingStreams": LIVE_STREAMS_DATA["upcomingStreams"]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching streams: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/live', methods=['GET'])
+def get_live_streams():
+    """Get currently live streams"""
+    try:
+        return jsonify({
+            "result": True,
+            "message": "Live streams fetched successfully",
+            "data": LIVE_STREAMS_DATA["currentStreams"]
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching live streams: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/upcoming', methods=['GET'])
+def get_upcoming_streams():
+    """Get upcoming scheduled streams"""
+    try:
+        return jsonify({
+            "result": True,
+            "message": "Upcoming streams fetched successfully",
+            "data": LIVE_STREAMS_DATA["upcomingStreams"]
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching upcoming streams: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/<int:stream_id>', methods=['GET'])
+def get_stream_details(stream_id):
+    """Get details of a specific stream"""
+    try:
+        # Search in both current and upcoming streams
+        all_streams = LIVE_STREAMS_DATA["currentStreams"] + LIVE_STREAMS_DATA["upcomingStreams"]
+        stream = next((s for s in all_streams if s['id'] == stream_id), None)
+        
+        if stream:
+            return jsonify({
+                "result": True,
+                "message": "Stream details fetched successfully",
+                "data": stream
+            }), 200
+        else:
+            return jsonify({
+                "result": False,
+                "message": "Stream not found",
+                "data": None
+            }), 404
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching stream details: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/<int:stream_id>/viewers', methods=['GET'])
+def get_viewer_count(stream_id):
+    """Get current viewer count for a live stream"""
+    try:
+        stream = next((s for s in LIVE_STREAMS_DATA["currentStreams"] if s['id'] == stream_id), None)
+        
+        if stream:
+            return jsonify({
+                "result": True,
+                "message": "Viewer count fetched successfully",
+                "data": {
+                    "streamId": stream_id,
+                    "viewerCount": stream.get("viewerCount", 0)
+                }
+            }), 200
+        else:
+            return jsonify({
+                "result": False,
+                "message": "Live stream not found",
+                "data": None
+            }), 404
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching viewer count: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/reminder', methods=['POST'])
+def set_stream_reminder():
+    """Set a reminder for an upcoming stream"""
+    try:
+        data = request.get_json()
+        stream_id = data.get('streamId')
+        user_id = data.get('userId')
+        
+        if not stream_id or not user_id:
+            return jsonify({
+                "result": False,
+                "message": "streamId and userId are required",
+                "data": None
+            }), 400
+        
+        # Find the stream in upcoming streams
+        stream = next((s for s in LIVE_STREAMS_DATA["upcomingStreams"] if s['id'] == stream_id), None)
+        
+        if stream:
+            # In a real application, you would save this to a database
+            return jsonify({
+                "result": True,
+                "message": "Reminder set successfully",
+                "data": {
+                    "streamId": stream_id,
+                    "userId": user_id,
+                    "streamTitle": stream.get("title"),
+                    "scheduledDate": stream.get("scheduledDate"),
+                    "scheduledTime": stream.get("scheduledTime")
+                }
+            }), 200
+        else:
+            return jsonify({
+                "result": False,
+                "message": "Upcoming stream not found",
+                "data": None
+            }), 404
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error setting reminder: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/search', methods=['GET'])
+def search_streams():
+    """Search streams by title or description"""
+    try:
+        query = request.args.get('q', '').lower()
+        
+        if not query:
+            return jsonify({
+                "result": False,
+                "message": "Search query is required",
+                "data": []
+            }), 400
+        
+        all_streams = LIVE_STREAMS_DATA["currentStreams"] + LIVE_STREAMS_DATA["upcomingStreams"]
+        filtered_streams = [
+            stream for stream in all_streams 
+            if query in stream['title'].lower() or query in stream['description'].lower()
+        ]
+        
+        return jsonify({
+            "result": True,
+            "message": f"Found {len(filtered_streams)} streams",
+            "data": filtered_streams
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error searching streams: {str(e)}",
+            "data": None
+        }), 500
+
+@app.route('/api/streams/category/<category>', methods=['GET'])
+def get_streams_by_category(category):
+    """Get streams by category (e.g., education, sports, cultural)"""
+    try:
+        # This is a simple implementation - you can expand based on your needs
+        all_streams = LIVE_STREAMS_DATA["currentStreams"] + LIVE_STREAMS_DATA["upcomingStreams"]
+        filtered_streams = [
+            stream for stream in all_streams 
+            if category.lower() in stream.get('hostedBy', '').lower()
+        ]
+        
+        return jsonify({
+            "result": True,
+            "message": f"Streams in {category} category fetched successfully",
+            "data": filtered_streams
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Error fetching streams by category: {str(e)}",
+            "data": None
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=3001)

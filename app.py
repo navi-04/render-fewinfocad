@@ -1175,7 +1175,7 @@ LIVE_STREAMS_DATA = {
     ]
 }
 
-# ==================== LIVE STREAMS ROUTES ====================
+
 
 @app.route('/api/streams/all', methods=['GET'])
 def get_all_streams():

@@ -1,12 +1,62 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
+# Static users data with different user types
+USERS = [
+    {"usertype": "student", "username": "student1@fewinfocad.edu", "password": "student123"},
+    {"usertype": "student", "username": "student2@fewinfocad.edu", "password": "student456"},
+    {"usertype": "faculty", "username": "faculty1@fewinfocad.edu", "password": "faculty123"},
+    {"usertype": "faculty", "username": "faculty2@fewinfocad.edu", "password": "faculty456"},
+    {"usertype": "hod", "username": "hod@fewinfocad.edu", "password": "hod123"},
+    {"usertype": "principal", "username": "principal@fewinfocad.edu", "password": "principal123"},
+    {"usertype": "admin", "username": "admin@fewinfocad.edu", "password": "admin123"}
+]
+
 @app.route('/')
 def home():
     return "Hello, this Flask app is running on Render"
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Login route that checks user credentials and returns user type"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({
+                "result": False,
+                "message": "Username and password are required"
+            }), 400
+        
+        # Check credentials against static users data
+        user = next((u for u in USERS if u['username'] == username and u['password'] == password), None)
+        
+        if user:
+            return jsonify({
+                "result": True,
+                "message": "Login successful",
+                "data": {
+                    "username": user['username'],
+                    "usertype": user['usertype']
+                }
+            }), 200
+        else:
+            return jsonify({
+                "result": False,
+                "message": "Invalid username or password"
+            }), 401
+            
+    except Exception as e:
+        return jsonify({
+            "result": False,
+            "message": f"Login error: {str(e)}"
+        }), 500
 
 
 @app.route('/api/info', methods=['GET'])

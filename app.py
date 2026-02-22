@@ -1,19 +1,18 @@
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Static users data with different user types
-USERS = [
-    {"usertype": "student", "username": "student1@fewinfocad.edu", "password": "student123"},
-    {"usertype": "student", "username": "student2@fewinfocad.edu", "password": "student456"},
-    {"usertype": "faculty", "username": "faculty1@fewinfocad.edu", "password": "faculty123"},
-    {"usertype": "faculty", "username": "faculty2@fewinfocad.edu", "password": "faculty456"},
-    {"usertype": "hod", "username": "hod@fewinfocad.edu", "password": "hod123"},
-    {"usertype": "principal", "username": "principal@fewinfocad.edu", "password": "principal123"},
-    {"usertype": "admin", "username": "admin@fewinfocad.edu", "password": "admin123"}
-]
+# Supabase client
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route('/')
 def home():
@@ -34,8 +33,14 @@ def login():
                 "message": "Username and password are required"
             }), 400
         
-        # Check credentials against static users data
-        user = next((u for u in USERS if u['username'] == username and u['password'] == password), None)
+        # Check credentials against Supabase database
+        response = supabase.table("users") \
+            .select("username, usertype") \
+            .eq("username", username) \
+            .eq("password", password) \
+            .limit(1) \
+            .execute()
+        user = response.data[0] if response.data else None
         
         if user:
             return jsonify({
